@@ -1,0 +1,34 @@
+# Stands up the Postgres store for the harness in one command:
+#
+#     docker compose up -d
+#
+# Credentials are read from the environment (optionally a .env file next to this
+# file), never hardcoded. The defaults below are throwaway LOCAL-DEV values; set
+# real ones via env / .env for anything that is not a laptop:
+#
+#     POSTGRES_USER=... POSTGRES_PASSWORD=... POSTGRES_DB=... docker compose up -d
+#
+# Then point the app at it (matching whatever creds you used):
+#
+#     export HARNESS_DB_BACKEND=postgres
+#     export DATABASE_URL=postgresql://harness:harness@localhost:5432/harness
+#     uvicorn harness.api:app --reload
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-harness}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-harness}
+      POSTGRES_DB: ${POSTGRES_DB:-harness}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - harness_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-harness} -d ${POSTGRES_DB:-harness}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  harness_pgdata:
